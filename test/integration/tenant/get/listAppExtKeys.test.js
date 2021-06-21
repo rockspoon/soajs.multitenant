@@ -35,17 +35,18 @@ describe("Testing list application external keys API", () => {
         requester('/tenants', 'get', params, (error, body) => {
             assert.ifError(error);
             assert.ok(body);
-            assert.ok(body.data);
-            tenants = body.data;
-            body.data.forEach(tenant => {
-                if (tenant.code === 'test2') {
-                    selectedTenant = tenant;
-                }
-            });
-            assert.ok(body.data.length > 0);
+	        assert.ok(body.data);
+	        assert.ok(body.data.items);
+	        assert.ok(body.data.items.length > 0);
             let check = validator.validate(body, listTenantsSchema);
             assert.deepEqual(check.valid, true);
             assert.deepEqual(check.errors, []);
+	        tenants = body.data.items;
+	        tenants.forEach(tenant => {
+		        if (tenant.code === 'test2') {
+			        selectedTenant = tenant;
+		        }
+	        });
             done();
         });
     });
@@ -69,7 +70,24 @@ describe("Testing list application external keys API", () => {
             done();
         });
     });
-
+	
+	
+	it("Success - will return all tenant application key - id (admin)", (done) => {
+		let params = {
+			qs: {
+				id: "5c0e74ba9acc3c5a84a51259",
+				appId: "5c0e74ba9acc3c5a84a5125a",
+				key: "a139786a6e6d18e48b4987e83789430b"
+			}
+		};
+		requester('/tenant/console/application/key/ext', 'get', params, (error, body) => {
+			assert.ifError(error);
+			assert.ok(body);
+			assert.ok(body.data);
+			done();
+		});
+	});
+	
     it("Success - will return all application external keys - no id", (done) => {
         let params = {
             qs: {

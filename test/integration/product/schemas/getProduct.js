@@ -11,7 +11,7 @@
 
 let scopeSchema = require('../../../../schemas/scope');
 let aclSchema = require('../../../../schemas/acl');
-aclSchema.required = true;
+//aclSchema.required = true;
 
 let getProductSchema = {
     "type": "object",
@@ -51,7 +51,11 @@ let getProductSchema = {
                             "name": {"type": "string", "required": true},
                             "description": {"type": "string", "required": false},
                             "_TTL": {"type": "number", "min": 1, "required": true},
-                            "acl": aclSchema
+                            "acl": aclSchema,
+	                        "aclTypeByEnv": {
+		                        "type": "object",
+		                        "required": false
+	                        }
                         }
                     }
                 }

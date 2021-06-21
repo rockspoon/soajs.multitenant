@@ -1,4 +1,3 @@
-
 /**
  * @license
  * Copyright SOAJS All Rights Reserved.
@@ -11,37 +10,48 @@
 const imported = require("../data/import.js");
 let helper = require("../helper.js");
 
-let multitenant, controller;
-
+let service, controller;
+let consoleserver = require('./mocked_services/console-service-mock');
+let marketplaceserver = require('./mocked_services/marketplace-service-mock');
 describe("starting integration tests", () => {
-
-    before((done) => {
-        let rootPath = process.cwd();
-        imported(rootPath + "/test/data/soajs_profile.js", rootPath + "/test/data/provision_integration/", (err, msg) => {
-	        if (err) {
-		        console.log(err);
-	        }
-	        if (msg){
-		        console.log(msg);
-	        }
-            console.log("Starting Controller and Multitenant service");
-            controller = require("soajs.controller");
-            setTimeout(function () {
-                multitenant = helper.requireModule('./index');
-                setTimeout(function () {
-                    done();
-                }, 5000);
-            }, 5000);
-        });
-    });
-
-    it("loading tests", (done) => {
-        require("./product/product.test.js");
-        require("./tenant/tenant.test.js");
-        done();
-    });
-
-    it("loading use cases", (done) => {
-        done();
-    });
+	
+	before((done) => {
+		let rootPath = process.cwd();
+		process.env.SOAJS_IMPORTER_DROPDB = true;
+		imported.runPath(rootPath + "/test/data/soajs_profile.js", rootPath + "/test/data/provision_integration/", true, null, (err, msg) => {
+			if (err) {
+				console.log(err);
+			}
+			if (msg) {
+				console.log(msg);
+			}
+			console.log("Starting Controller ...");
+			controller = require("soajs.controller/_index.js");
+			controller.runService(() => {
+				console.log("Starting console ...");
+				consoleserver.runService(() => {
+					console.log("Starting marketplace ...");
+					marketplaceserver.runService(() => {
+						console.log("Starting Multitenant ...");
+						service = helper.requireModule('./_index.js');
+						service.runService(() => {
+							setTimeout(function () {
+								done();
+							}, 5000);
+						});
+					});
+				});
+			});
+		});
+	});
+	
+	it("loading tests", (done) => {
+		require("./product/product.test.js");
+		require("./tenant/tenant.test.js");
+		done();
+	});
+	
+	it("loading use cases", (done) => {
+		done();
+	});
 });

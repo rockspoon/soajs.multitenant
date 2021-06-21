@@ -64,6 +64,39 @@ describe("Testing add tenant API", () => {
             done();
         });
     });
+	
+	it("Success - will add console product tenant record - tenant only ", (done) => {
+		let params = {
+			body: {
+				"name": "tenant console product only",
+				"code": "lolbo",
+				"description": "tenant product only",
+				"type": "product",
+				"profile": {},
+				"tag": "tag",
+				"oauth": {
+					"secret": "this is a secret test",
+					"redirectURI": "http://domain.com",
+					"grants": [
+						"password",
+						"refresh_token"
+					],
+					"disabled": 0,
+					"type": 1,
+					"loginMode": "urac"
+				}
+			}
+		};
+		requester('/tenant/console', 'post', params, (error, body) => {
+			assert.ifError(error);
+			assert.ok(body);
+			assert.ok(body.data);
+			let check = validator.validate(body, addTenantSchema);
+			assert.deepEqual(check.valid, true);
+			assert.deepEqual(check.errors, []);
+			done();
+		});
+	});
 
     it("Success - will return product tenant record - id", (done) => {
         let params = {
@@ -117,16 +150,17 @@ describe("Testing add tenant API", () => {
         let params = {};
         requester('/tenants', 'get', params, (error, body) => {
             assert.ifError(error);
-            assert.ok(body);
-            assert.ok(body.data);
-            let found;
-            body.data.forEach(tenant => {
-               if (tenant.name === "tenant client only" && tenant.name === client.name) {
-                   found = true;
-               }
-            });
-            assert.ok(found);
-            assert.ok(body.data.length > 0);
+	        assert.ok(body);
+	        assert.ok(body.data);
+	        assert.ok(body.data.items);
+	        assert.ok(body.data.items.length > 0);
+	        let found = false;
+	        body.data.items.forEach(tenant => {
+		        if (tenant.name === "tenant client only" && tenant.name === client.name) {
+			        found = true;
+		        }
+	        });
+	        assert.ok(found);
             let check = validator.validate(body, listTenantsSchema);
             assert.deepEqual(check.valid, true);
             assert.deepEqual(check.errors, []);
@@ -163,14 +197,15 @@ describe("Testing add tenant API", () => {
 			assert.ifError(error);
 			assert.ok(body);
 			assert.ok(body.data);
-			let found;
-			body.data.forEach(tenant => {
+			assert.ok(body.data.items);
+			assert.ok(body.data.items.length > 0);
+			let found = false;
+			body.data.items.forEach(tenant => {
 				if (tenant.name === "tenant client no main") {
 					found = true;
 				}
 			});
 			assert.ok(found);
-			assert.ok(body.data.length > 0);
 			let check = validator.validate(body, listTenantsSchema);
 			assert.deepEqual(check.valid, true);
 			assert.deepEqual(check.errors, []);
@@ -207,14 +242,15 @@ describe("Testing add tenant API", () => {
 			assert.ifError(error);
 			assert.ok(body);
 			assert.ok(body.data);
-			let found;
-			body.data.forEach(tenant => {
+			assert.ok(body.data.items);
+			assert.ok(body.data.items.length > 0);
+			let found = false;
+			body.data.items.forEach(tenant => {
 				if (tenant.name === "tenant product no main") {
 					found = true;
 				}
 			});
 			assert.ok(found);
-			assert.ok(body.data.length > 0);
 			let check = validator.validate(body, listTenantsSchema);
 			assert.deepEqual(check.valid, true);
 			assert.deepEqual(check.errors, []);
@@ -253,14 +289,15 @@ describe("Testing add tenant API", () => {
 			assert.ifError(error);
 			assert.ok(body);
 			assert.ok(body.data);
-			let found;
-			body.data.forEach(tenant => {
+			assert.ok(body.data.items);
+			assert.ok(body.data.items.length > 0);
+			let found = false;
+			body.data.items.forEach(tenant => {
 				if (tenant.name === "tenant product with application") {
 					found = true;
 				}
 			});
 			assert.ok(found);
-			assert.ok(body.data.length > 0);
 			let check = validator.validate(body, listTenantsSchema);
 			assert.deepEqual(check.valid, true);
 			assert.deepEqual(check.errors, []);
@@ -301,14 +338,15 @@ describe("Testing add tenant API", () => {
 			assert.ifError(error);
 			assert.ok(body);
 			assert.ok(body.data);
-			let found;
-			body.data.forEach(tenant => {
+			assert.ok(body.data.items);
+			assert.ok(body.data.items.length > 0);
+			let found = false;
+			body.data.items.forEach(tenant => {
 				if (tenant.name === "tenant product with application with key") {
 					found = true;
 				}
 			});
 			assert.ok(found);
-			assert.ok(body.data.length > 0);
 			let check = validator.validate(body, listTenantsSchema);
 			assert.deepEqual(check.valid, true);
 			assert.deepEqual(check.errors, []);
@@ -369,14 +407,15 @@ describe("Testing add tenant API", () => {
 			assert.ifError(error);
 			assert.ok(body);
 			assert.ok(body.data);
-			let found;
-			body.data.forEach(tenant => {
+			assert.ok(body.data.items);
+			assert.ok(body.data.items.length > 0);
+			let found = false;
+			body.data.items.forEach(tenant => {
 				if (tenant.name === "tenant product with application with ext key") {
 					found = true;
 				}
 			});
 			assert.ok(found);
-			assert.ok(body.data.length > 0);
 			let check = validator.validate(body, listTenantsSchema);
 			assert.deepEqual(check.valid, true);
 			assert.deepEqual(check.errors, []);

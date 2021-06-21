@@ -37,14 +37,17 @@ describe("Testing add application key API", () => {
 			assert.ifError(error);
 			assert.ok(body);
 			assert.ok(body.data);
-			body.data.forEach(tenant => {
+			assert.ok(body.data.items);
+			assert.ok(body.data.items.length > 0);
+			let check = validator.validate(body, listTenantsSchema);
+			assert.deepEqual(check.valid, true);
+			assert.deepEqual(check.errors, []);
+			let tenants = body.data.items;
+			tenants.forEach(tenant => {
 				if (tenant.code === 'test2') {
 					selectedTenant = tenant;
 				}
 			});
-			let check = validator.validate(body, listTenantsSchema);
-			assert.deepEqual(check.valid, true);
-			assert.deepEqual(check.errors, []);
 			done();
 		});
 	});
@@ -66,6 +69,35 @@ describe("Testing add application key API", () => {
 			}
 		};
 		requester('/admin/tenant/application/key', 'post', params, (error, body) => {
+			assert.ifError(error);
+			assert.ok(body);
+			assert.ok(body.data);
+			assert.deepEqual(body.data, 1);
+			let check = validator.validate(body, addAppKeySchema);
+			assert.deepEqual(check.valid, true);
+			assert.deepEqual(check.errors, []);
+			done();
+		});
+	});
+	
+	
+	it("Success - will add application key - console", (done) => {
+		let params = {
+			qs: {
+				id: "5c0e74ba9acc3c5a84a51259"
+			},
+			body: {
+				appId: '5c0e74ba9acc3c5a84a5125a',
+				extKey: {
+					label: 'Label for Key',
+					env: 'dashboard',
+					expDate: new Date((new Date().getFullYear()) + 2, 0, 1),
+					device: {},
+					geo: {}
+				}
+			}
+		};
+		requester('/tenant/console/application/key', 'post', params, (error, body) => {
 			assert.ifError(error);
 			assert.ok(body);
 			assert.ok(body.data);

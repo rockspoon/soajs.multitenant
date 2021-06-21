@@ -56,11 +56,13 @@ before(function (done) {
 				id: selectedProd._id,
 			},
 			body: {
-				code: "NEWS",
+				code: "TEST2_NEWS",
 				name: "PACK_NAME2",
 				description: "Pack Description after update",
 				_TTL: "24",
-				type: "granular",
+				type: {
+					"dashboard": "granular"
+				},
 				acl: {}
 			}
 		};
@@ -68,7 +70,30 @@ before(function (done) {
 			assert.ifError(error);
 			assert.ok(body);
 			assert.ok(body.data);
-			assert.deepEqual(body.data, "product package NEWS updated successfully");
+			assert.deepEqual(body.data, "product package TEST2_NEWS updated successfully");
+			let check = validator.validate(body, updatePackagesSchema);
+			assert.deepEqual(check.valid, true);
+			assert.deepEqual(check.errors, []);
+			done();
+		});
+	});
+	
+	it("Success - will update product package console", (done) => {
+		let params = {
+			qs: {
+				id: "5512867be603d7e01ab1688d"
+			},
+			body: {
+				code: "DSBRD_ELAS",
+				name: "PACK1232321_NAME2",
+				description: "Pack Description after update",
+			}
+		};
+		requester('/product/console/package', 'put', params, (error, body) => {
+			assert.ifError(error);
+			assert.ok(body);
+			assert.ok(body.data);
+			assert.deepEqual(body.data, "product package DSBRD_ELAS updated successfully");
 			let check = validator.validate(body, updatePackagesSchema);
 			assert.deepEqual(check.valid, true);
 			assert.deepEqual(check.errors, []);
@@ -81,7 +106,7 @@ before(function (done) {
                 id: selectedProd._id,
             },
             body: {
-                code: "NEWS",
+                code: "TEST2_NEWS",
                 name: "PACK_NAME2",
                 description: "Pack Description after update",
                 _TTL: "24",
@@ -92,7 +117,7 @@ before(function (done) {
             assert.ifError(error);
             assert.ok(body);
             assert.ok(body.data);
-            assert.deepEqual(body.data, "product package NEWS updated successfully");
+            assert.deepEqual(body.data, "product package TEST2_NEWS updated successfully");
             let check = validator.validate(body, updatePackagesSchema);
             assert.deepEqual(check.valid, true);
             assert.deepEqual(check.errors, []);
@@ -125,6 +150,9 @@ before(function (done) {
                 code: "TEST2_NEWS",
                 description: "Pack Description after update",
                 acl: {},
+	            aclTypeByEnv: {
+                	dashboard: "granular"
+	            },
                 _TTL: 24 * 3600 * 1000
             });
             let check = validator.validate(body, getProductsSchema);

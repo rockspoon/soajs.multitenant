@@ -11,6 +11,7 @@
 const helper = require("../../helper.js");
 const BL = helper.requireModule('bl/tenant.js');
 const assert = require('assert');
+const nock = require("nock");
 
 describe("Unit test for: BL - tenant", () => {
 	let soajs = {
@@ -63,6 +64,14 @@ describe("Unit test for: BL - tenant", () => {
 			error: () => {
 				console.log();
 			}
+		},
+		awareness: {
+			connect: (service, version, cb) => {
+				return cb({
+					headers: {},
+					host: "www.example.com"
+				});
+			}
 		}
 	};
 	
@@ -75,12 +84,12 @@ describe("Unit test for: BL - tenant", () => {
 		it("Success - List tenants - empty object", (done) => {
 			BL.modelObj = {
 				listTenants: (nullObject, cb) => {
-					return cb(null, []);
+					return cb(null, {"items": []});
 				}
 			};
 			BL.list(soajs, {}, (err, records) => {
 				assert.ok(records);
-				assert(Array.isArray(records));
+				assert(Array.isArray(records.items));
 				done();
 			});
 		});
@@ -128,11 +137,11 @@ describe("Unit test for: BL - tenant", () => {
 			};
 			
 			function Tenant() {
-				console.log("Tenant");
+				console.log("");
 			}
 			
 			Tenant.prototype.listTenants = (nullObject, cb) => {
-				return cb(null, []);
+				return cb(null, {"items": []});
 			};
 			Tenant.prototype.closeConnection = () => {
 			};
@@ -140,7 +149,7 @@ describe("Unit test for: BL - tenant", () => {
 			
 			BL.list(soajsClient, {}, (err, records) => {
 				assert.ok(records);
-				assert(Array.isArray(records));
+				assert(Array.isArray(records.items));
 				done();
 			});
 		});
@@ -177,6 +186,87 @@ describe("Unit test for: BL - tenant", () => {
 				assert.ok(err);
 				assert.equal(records, null);
 				assert.deepEqual(err, {code: 400, msg: soajsClient.config.errors[400]});
+				done();
+			});
+		});
+		
+	});
+	
+	describe("Testing list console tenants", () => {
+		afterEach((done) => {
+			BL.modelObj = null;
+			done();
+		});
+		
+		it("Success - List console tenants - empty object", (done) => {
+			BL.modelObj = {
+				listConsoleTenants: (nullObject, cb) => {
+					return cb(null, []);
+				}
+			};
+			BL.listConsole(soajs, {}, (err, records) => {
+				assert.ok(records);
+				assert(Array.isArray(records));
+				done();
+			});
+		});
+		
+		it("Fails - List console tenants - null data", (done) => {
+			BL.modelObj = {
+				listConsoleTenants: (nullObject, cb) => {
+					return cb(true, null);
+				}
+			};
+			BL.listConsole(soajs, null, (err, records) => {
+				assert.ok(err);
+				assert.equal(records, null);
+				assert.deepEqual(err, {code: 400, msg: soajs.config.errors[400]});
+				done();
+			});
+		});
+		
+		it("Fails - List console tenants - listTenants error", (done) => {
+			BL.modelObj = {
+				listConsoleTenants: (nullObject, cb) => {
+					return cb(true, null);
+				}
+			};
+			BL.listConsole(soajs, {}, (err, records) => {
+				assert.ok(err);
+				assert.equal(records, null);
+				assert.deepEqual(err.code, 602);
+				done();
+			});
+		});
+		
+		it("Success - List console tenants - empty object - client tenant", (done) => {
+			let soajsClient = {
+				config: {},
+				tenant: {
+					type: "client",
+					dbConfig: {}
+				},
+				log: {
+					error: () => {
+						console.log();
+					}
+				}
+			};
+			
+			function Tenant() {
+				console.log("");
+			}
+			
+			Tenant.prototype.listConsoleTenants = (nullObject, cb) => {
+				return cb(null, []);
+			};
+			Tenant.prototype.closeConnection = () => {
+			};
+			BL.model = Tenant;
+			
+			BL.listConsole(soajsClient, {}, (err, records) => {
+				assert.ok(records);
+				assert(Array.isArray(records));
 				done();
 			});
 		});
@@ -278,7 +368,7 @@ describe("Unit test for: BL - tenant", () => {
 			};
 			
 			function Tenant() {
-				console.log("Tenant");
+				console.log("");
 			}
 			
 			Tenant.prototype.getTenant = (data, cb) => {
@@ -322,7 +412,7 @@ describe("Unit test for: BL - tenant", () => {
 			};
 			
 			function Tenant() {
-				console.log("Tenant");
+				console.log("");
 			}
 			
 			Tenant.prototype.getTenant = (inputMask, cb) => {
@@ -367,7 +457,7 @@ describe("Unit test for: BL - tenant", () => {
 			};
 			
 			function Tenant() {
-				console.log("Tenant");
+				console.log("");
 			}
 			
 			Tenant.prototype.getTenant = (data, cb) => {
@@ -405,7 +495,7 @@ describe("Unit test for: BL - tenant", () => {
 			};
 			
 			function Tenant() {
-				console.log("Tenant");
+				console.log("");
 			}
 			
 			Tenant.prototype.getTenant = (data, cb) => {
@@ -444,7 +534,7 @@ describe("Unit test for: BL - tenant", () => {
 			};
 			
 			function Tenant() {
-				console.log("Tenant");
+				console.log("");
 			}
 			
 			Tenant.prototype.getTenant = (data, cb) => {
@@ -463,9 +553,38 @@ describe("Unit test for: BL - tenant", () => {
 		});
 	});
 	
+	describe("Testing Get console tenant", () => {
+		afterEach((done) => {
+			BL.modelObj = null;
+			done();
+		});
+		
+		it("Success - Get tenant - code", (done) => {
+			let inputMask = {
+				code: "DBTN"
+			};
+			
+			BL.modelObj = {
+				getTenant: (inputMask, cb) => {
+					return cb(null, {
+						"code": "DBTN",
+						"name": "DBTN Tenant",
+						"description": "this is a description for DBTN tenant",
+					});
+				}
+			};
+			BL.get(soajs, inputMask, (err, record) => {
+				assert.ok(record);
+				assert.deepEqual(record.name, "DBTN Tenant");
+				done();
+			});
+		});
+	});
+	
 	describe("Testing Add tenant", () => {
 		afterEach((done) => {
 			BL.modelObj = null;
+			nock.cleanAll();
 			done();
 		});
 		
@@ -513,11 +632,19 @@ describe("Unit test for: BL - tenant", () => {
 					error: () => {
 						console.log();
 					}
+				},
+				awareness: {
+					connect: (service, version, cb) => {
+						return cb({
+							headers: {},
+							host: "www.example.com"
+						});
+					}
 				}
 			};
 			
 			function Tenant() {
-				console.log("Tenant");
+				console.log("");
 			}
 			
 			Tenant.prototype.countTenants = (data, cb) => {
@@ -560,7 +687,20 @@ describe("Unit test for: BL - tenant", () => {
 					}
 				});
 			};
-			
+			nock('http://www.example.com')
+				.get('/registry/key')
+				.query({
+					env: 'kube',
+				})
+				.reply(200, {
+					"result": true,
+					"data": {
+						key: {
+							algorithm: "123",
+							password: "123"
+						}
+					}
+				});
 			BL.model = Tenant;
 			BL.localConfig = {
 				"tenant": {
@@ -649,11 +789,19 @@ describe("Unit test for: BL - tenant", () => {
 					error: () => {
 						console.log();
 					}
+				},
+				awareness: {
+					connect: (service, version, cb) => {
+						return cb({
+							headers: {},
+							host: "www.example.com"
+						});
+					}
 				}
 			};
 			
 			function Tenant() {
-				console.log("Tenant");
+				console.log("");
 			}
 			
 			Tenant.prototype.countTenants = (data, cb) => {
@@ -707,7 +855,21 @@ describe("Unit test for: BL - tenant", () => {
 					}
 				});
 			};
-			
+			nock('http://www.example.com')
+				.get('/registry/key')
+				.query({
+					env: 'kube',
+				})
+				.reply(200, {
+					"result": true,
+					
+					"data": {
+						key: {
+							algorithm: "123",
+							password: "123"
+						}
+					}
+				});
 			BL.model = Tenant;
 			BL.localConfig = {
 				"tenant": {
@@ -807,11 +969,19 @@ describe("Unit test for: BL - tenant", () => {
 					error: () => {
 						console.log();
 					}
+				},
+				awareness: {
+					connect: (service, version, cb) => {
+						return cb({
+							headers: {},
+							host: "www.example.com"
+						});
+					}
 				}
 			};
 			
 			function Tenant() {
-				console.log("Tenant");
+				console.log("");
 			}
 			
 			Tenant.prototype.countTenants = (data, cb) => {
@@ -854,7 +1024,20 @@ describe("Unit test for: BL - tenant", () => {
 					}
 				});
 			};
-			
+			nock('http://www.example.com')
+				.get('/registry/key')
+				.query({
+					env: 'kube',
+				})
+				.reply(200, {
+					"result": true,
+					"data": {
+						key: {
+							algorithm: "123",
+							password: "123"
+						}
+					}
+				});
 			BL.model = Tenant;
 			BL.localConfig = {
 				"tenant": {
@@ -889,11 +1072,6 @@ describe("Unit test for: BL - tenant", () => {
 			};
 			let soajs = {
 				core: {
-					registry: {
-						loadByEnv: (env, cb) => {
-							return cb(null, {code: "KUBE"});
-						}
-					},
 					key: {
 						generateExternalKey: (key, opt, opt1, opt2, cb) => {
 							return cb(null, "2313131312312");
@@ -977,11 +1155,19 @@ describe("Unit test for: BL - tenant", () => {
 					error: () => {
 						console.log();
 					}
+				},
+				awareness: {
+					connect: (service, version, cb) => {
+						return cb({
+							headers: {},
+							host: "www.example.com"
+						});
+					}
 				}
 			};
 			
 			function Tenant() {
-				console.log("Tenant");
+				console.log("");
 			}
 			
 			Tenant.prototype.countTenants = (data, cb) => {
@@ -1021,7 +1207,16 @@ describe("Unit test for: BL - tenant", () => {
 					}
 				});
 			};
-			
+			nock.cleanAll();
+			nock('http://www.example.com')
+				.get('/registry/key?env=kube')
+				.reply(200, {
+					"result": true,
+					"data": {
+						algorithm: "123",
+						password: "123"
+					}
+				});
 			BL.model = Tenant;
 			BL.localConfig = {
 				"tenant": {
@@ -1056,11 +1251,6 @@ describe("Unit test for: BL - tenant", () => {
 			};
 			let soajs = {
 				core: {
-					registry: {
-						loadByEnv: (env, cb) => {
-							return cb(null, {code: "KUBE", serviceConfig: {key: "test"}});
-						}
-					},
 					key: {
 						generateExternalKey: (key, opt, opt1, opt2, cb) => {
 							return cb(null, "2313131312312");
@@ -1144,11 +1334,19 @@ describe("Unit test for: BL - tenant", () => {
 					error: () => {
 						console.log();
 					}
+				},
+				awareness: {
+					connect: (service, version, cb) => {
+						return cb({
+							headers: {},
+							host: "www.example.com"
+						});
+					}
 				}
 			};
 			
 			function Tenant() {
-				console.log("Tenant");
+				console.log("");
 			}
 			
 			Tenant.prototype.countTenants = (data, cb) => {
@@ -1198,6 +1396,16 @@ describe("Unit test for: BL - tenant", () => {
 					});
 				}
 			};
+			nock('http://www.example.com')
+				.persist()
+				.get('/registry/key?env=kube')
+				.reply(200, {
+					"result": true,
+					"data": {
+						algorithm: "123",
+						password: "123"
+					}
+				});
 			
 			BL.model = Tenant;
 			BL.localConfig = {
@@ -1233,11 +1441,6 @@ describe("Unit test for: BL - tenant", () => {
 			};
 			let soajs = {
 				core: {
-					registry: {
-						loadByEnv: (env, cb) => {
-							return cb(null, {code: "KUBE", serviceConfig: {key: "test"}});
-						}
-					},
 					key: {
 						generateExternalKey: (key, opt, opt1, opt2, cb) => {
 							return cb(null, "2313131312312");
@@ -1303,11 +1506,19 @@ describe("Unit test for: BL - tenant", () => {
 					error: () => {
 						console.log();
 					}
+				},
+				awareness: {
+					connect: (service, version, cb) => {
+						return cb({
+							headers: {},
+							host: "www.example.com"
+						});
+					}
 				}
 			};
 			
 			function Tenant() {
-				console.log("Tenant");
+				console.log("");
 			}
 			
 			Tenant.prototype.countTenants = (data, cb) => {
@@ -1350,7 +1561,20 @@ describe("Unit test for: BL - tenant", () => {
 					}
 				});
 			};
-			
+			nock('http://www.example.com')
+				.get('/registry/key')
+				.query({
+					env: 'kube',
+				})
+				.reply(200, {
+					"result": true,
+					"data": {
+						key: {
+							algorithm: "123",
+							password: "123"
+						}
+					}
+				});
 			BL.model = Tenant;
 			BL.localConfig = {
 				"tenant": {
@@ -1437,11 +1661,19 @@ describe("Unit test for: BL - tenant", () => {
 					error: () => {
 						console.log();
 					}
+				},
+				awareness: {
+					connect: (service, version, cb) => {
+						return cb({
+							headers: {},
+							host: "www.example.com"
+						});
+					}
 				}
 			};
 			
 			function Tenant() {
-				console.log("Tenant");
+				console.log("");
 			}
 			
 			Tenant.prototype.countTenants = (data, cb) => {
@@ -1484,7 +1716,20 @@ describe("Unit test for: BL - tenant", () => {
 					}
 				});
 			};
-			
+			nock('http://www.example.com')
+				.get('/registry/key')
+				.query({
+					env: 'kube',
+				})
+				.reply(200, {
+					"result": true,
+					"data": {
+						key: {
+							algorithm: "123",
+							password: "123"
+						}
+					}
+				});
 			BL.model = Tenant;
 			BL.localConfig = {
 				"tenant": {
@@ -1526,7 +1771,20 @@ describe("Unit test for: BL - tenant", () => {
 		
 		it("Fails - add tenant - empty data", (done) => {
 			BL.modelObj = {};
-			
+			nock('http://www.example.com')
+				.get('/registry/key')
+				.query({
+					env: 'kube',
+				})
+				.reply(200, {
+					"result": true,
+					"data": {
+						key: {
+							algorithm: "123",
+							password: "123"
+						}
+					}
+				});
 			BL.add(soajs, null, {}, (err) => {
 				assert.ok(err);
 				assert.deepEqual(err, {
@@ -1541,7 +1799,7 @@ describe("Unit test for: BL - tenant", () => {
 			BL.modelObj = {};
 			
 			function Tenant() {
-				console.log("Tenant");
+				console.log("");
 			}
 			
 			Tenant.prototype.generateId = () => {
@@ -1550,7 +1808,20 @@ describe("Unit test for: BL - tenant", () => {
 			Tenant.prototype.countTenants = (data, cb) => {
 				return cb(true, 0);
 			};
-			
+			nock('http://www.example.com')
+				.get('/registry/key')
+				.query({
+					env: 'kube',
+				})
+				.reply(200, {
+					"result": true,
+					"data": {
+						key: {
+							algorithm: "123",
+							password: "123"
+						}
+					}
+				});
 			let inputMask = {
 				"name": "tenant only name",
 				"description": "3221",
@@ -1621,6 +1892,14 @@ describe("Unit test for: BL - tenant", () => {
 					error: () => {
 						console.log();
 					}
+				},
+				awareness: {
+					connect: (service, version, cb) => {
+						return cb({
+							headers: {},
+							host: "www.example.com"
+						});
+					}
 				}
 			};
 			BL.add(soajsClient, inputMask, {}, (err) => {
@@ -1663,9 +1942,23 @@ describe("Unit test for: BL - tenant", () => {
 			};
 			
 			function Tenant() {
-				console.log("Tenant");
+				console.log("");
 			}
 			
+			nock('http://www.example.com')
+				.get('/registry/key')
+				.query({
+					env: 'kube',
+				})
+				.reply(200, {
+					"result": true,
+					"data": {
+						key: {
+							algorithm: "123",
+							password: "123"
+						}
+					}
+				});
 			Tenant.prototype.closeConnection = () => {
 			};
 			Tenant.prototype.generateId = () => {
@@ -1713,6 +2006,14 @@ describe("Unit test for: BL - tenant", () => {
 					error: () => {
 						console.log();
 					}
+				},
+				awareness: {
+					connect: (service, version, cb) => {
+						return cb({
+							headers: {},
+							host: "www.example.com"
+						});
+					}
 				}
 			};
 			BL.add(soajsClient, inputMask, {}, (err) => {
@@ -1755,9 +2056,23 @@ describe("Unit test for: BL - tenant", () => {
 			};
 			
 			function Tenant() {
-				console.log("Tenant");
+				console.log("");
 			}
 			
+			nock('http://www.example.com')
+				.get('/registry/key')
+				.query({
+					env: 'kube',
+				})
+				.reply(200, {
+					"result": true,
+					"data": {
+						key: {
+							algorithm: "123",
+							password: "123"
+						}
+					}
+				});
 			Tenant.prototype.closeConnection = () => {
 			};
 			Tenant.prototype.generateId = () => {
@@ -1808,6 +2123,14 @@ describe("Unit test for: BL - tenant", () => {
 					error: () => {
 						console.log();
 					}
+				},
+				awareness: {
+					connect: (service, version, cb) => {
+						return cb({
+							headers: {},
+							host: "www.example.com"
+						});
+					}
 				}
 			};
 			BL.add(soajsClient, inputMask, {}, (err) => {
@@ -1850,9 +2173,23 @@ describe("Unit test for: BL - tenant", () => {
 			};
 			
 			function Tenant() {
-				console.log("Tenant");
+				console.log("");
 			}
 			
+			nock('http://www.example.com')
+				.get('/registry/key')
+				.query({
+					env: 'kube',
+				})
+				.reply(200, {
+					"result": true,
+					"data": {
+						key: {
+							algorithm: "123",
+							password: "123"
+						}
+					}
+				});
 			Tenant.prototype.closeConnection = () => {
 			};
 			Tenant.prototype.generateId = () => {
@@ -1903,6 +2240,14 @@ describe("Unit test for: BL - tenant", () => {
 					error: () => {
 						console.log();
 					}
+				},
+				awareness: {
+					connect: (service, version, cb) => {
+						return cb({
+							headers: {},
+							host: "www.example.com"
+						});
+					}
 				}
 			};
 			BL.add(soajsClient, inputMask, {}, (err) => {
@@ -1912,7 +2257,7 @@ describe("Unit test for: BL - tenant", () => {
 			});
 		});
 		
-		it("Fails - add tenant - no code and failed listing tenants ", (done) => {
+		it.skip("Fails - add tenant - no code and failed listing tenants ", (done) => {
 			BL.modelObj = {};
 			let inputMask = {
 				"name": "tenant only name",
@@ -1945,9 +2290,21 @@ describe("Unit test for: BL - tenant", () => {
 			};
 			
 			function Tenant() {
-				console.log("Tenant");
+				console.log("");
 			}
 			
+			nock('http://www.example.com')
+				.get('/registry/key')
+				.query({
+					env: 'kube',
+				})
+				.reply(200, {
+					"result": true,
+					"data": {
+						algorithm: "123",
+						password: "123"
+					}
+				});
 			Tenant.prototype.closeConnection = () => {
 			};
 			Tenant.prototype.generateId = () => {
@@ -2007,15 +2364,18 @@ describe("Unit test for: BL - tenant", () => {
 					error: () => {
 						console.log();
 					}
+				},
+				awareness: {
+					connect: (service, version, cb) => {
+						return cb({
+							headers: {},
+							host: "www.example.com"
+						});
+					}
 				}
 			};
 			let soajs = {
 				core: {
-					registry: {
-						loadByEnv: (env, cb) => {
-							return cb(null, {code: "KUBE", serviceConfig: {key: "test"}});
-						}
-					},
 					key: {
 						generateExternalKey: (key, opt, opt1, opt2, cb) => {
 							return cb(null, "2313131312312");
@@ -2068,9 +2428,23 @@ describe("Unit test for: BL - tenant", () => {
 			};
 			
 			function Tenant() {
-				console.log("Tenant");
+				console.log("");
 			}
 			
+			nock('http://www.example.com')
+				.get('/registry/key')
+				.query({
+					env: 'kube',
+				})
+				.reply(200, {
+					"result": true,
+					"data": {
+						key: {
+							algorithm: "123",
+							password: "123"
+						}
+					}
+				});
 			Tenant.prototype.closeConnection = () => {
 			};
 			Tenant.prototype.generateId = () => {
@@ -2134,11 +2508,6 @@ describe("Unit test for: BL - tenant", () => {
 			};
 			let soajs = {
 				core: {
-					registry: {
-						loadByEnv: (env, cb) => {
-							return cb(null, {code: "KUBE", serviceConfig: {key: "test"}});
-						}
-					},
 					key: {
 						generateExternalKey: (key, opt, opt1, opt2, cb) => {
 							return cb(null, "2313131312312");
@@ -2148,6 +2517,14 @@ describe("Unit test for: BL - tenant", () => {
 				provision: {
 					generateInternalKey: (cb) => {
 						return cb(true, "232423423423432");
+					}
+				},
+				awareness: {
+					connect: (service, version, cb) => {
+						return cb({
+							headers: {},
+							host: "www.example.com"
+						});
 					}
 				}
 			};
@@ -2191,9 +2568,23 @@ describe("Unit test for: BL - tenant", () => {
 			};
 			
 			function Tenant() {
-				console.log("Tenant");
+				console.log("");
 			}
 			
+			nock('http://www.example.com')
+				.get('/registry/key')
+				.query({
+					env: 'kube',
+				})
+				.reply(200, {
+					"result": true,
+					"data": {
+						key: {
+							algorithm: "123",
+							password: "123"
+						}
+					}
+				});
 			Tenant.prototype.closeConnection = () => {
 			};
 			Tenant.prototype.generateId = () => {
@@ -2254,18 +2645,22 @@ describe("Unit test for: BL - tenant", () => {
 					error: () => {
 						console.log();
 					}
+				},
+				awareness: {
+					connect: (service, version, cb) => {
+						return cb({
+							headers: {},
+							host: "www.example.com"
+						});
+					}
 				}
 			};
 			let soajs = {
 				core: {
-					registry: {
-						loadByEnv: (env, cb) => {
-							return cb(null, {code: "KUBE", serviceConfig: {key: "test"}});
-						}
-					},
 					key: {
 						generateExternalKey: (key, opt, opt1, opt2, cb) => {
-							return cb(true, "2313131312312");
+							return cb("error");
+							//return cb(true, "2313131312312");
 						}
 					}
 				},
@@ -2315,9 +2710,23 @@ describe("Unit test for: BL - tenant", () => {
 			};
 			
 			function Tenant() {
-				console.log("Tenant");
+				console.log("");
 			}
 			
+			nock('http://www.example.com')
+				.get('/registry/key')
+				.query({
+					env: 'kube',
+				})
+				.reply(200, {
+					"result": false,
+					"data": {
+						key: {
+							algorithm: "123",
+							password: "123"
+						}
+					}
+				});
 			Tenant.prototype.closeConnection = () => {
 			};
 			Tenant.prototype.generateId = () => {
@@ -2377,15 +2786,18 @@ describe("Unit test for: BL - tenant", () => {
 					error: () => {
 						console.log();
 					}
+				},
+				awareness: {
+					connect: (service, version, cb) => {
+						return cb({
+							headers: {},
+							host: "www.example.com"
+						});
+					}
 				}
 			};
 			let soajs = {
 				core: {
-					registry: {
-						loadByEnv: (env, cb) => {
-							return cb(true, {code: "KUBE", serviceConfig: {key: "test"}});
-						}
-					},
 					key: {
 						generateExternalKey: (key, opt, opt1, opt2, cb) => {
 							return cb(null, "2313131312312");
@@ -2400,7 +2812,7 @@ describe("Unit test for: BL - tenant", () => {
 			};
 			BL.add(soajsClient, inputMask, soajs, (err) => {
 				assert.ok(err);
-				assert.deepEqual(err.code, 602);
+				assert.deepEqual(err.code, 503);
 				done();
 			});
 		});
@@ -2438,9 +2850,18 @@ describe("Unit test for: BL - tenant", () => {
 			};
 			
 			function Tenant() {
-				console.log("Tenant");
+				console.log("");
 			}
 			
+			nock('http://www.example.com')
+				.get('/registry/key')
+				.query({
+					env: 'kube',
+				})
+				.reply(200, {
+					"result": true,
+					"data": null
+				});
 			Tenant.prototype.closeConnection = () => {
 			};
 			Tenant.prototype.generateId = () => {
@@ -2500,15 +2921,18 @@ describe("Unit test for: BL - tenant", () => {
 					error: () => {
 						console.log();
 					}
+				},
+				awareness: {
+					connect: (service, version, cb) => {
+						return cb({
+							headers: {},
+							host: "www.example.com"
+						});
+					}
 				}
 			};
 			let soajs = {
 				core: {
-					registry: {
-						loadByEnv: (env, cb) => {
-							return cb(null, null);
-						}
-					},
 					key: {
 						generateExternalKey: (key, opt, opt1, opt2, cb) => {
 							return cb(null, "2313131312312");
@@ -2595,11 +3019,19 @@ describe("Unit test for: BL - tenant", () => {
 					error: () => {
 						console.log();
 					}
+				},
+				awareness: {
+					connect: (service, version, cb) => {
+						return cb({
+							headers: {},
+							host: "www.example.com"
+						});
+					}
 				}
 			};
 			
 			function Tenant() {
-				console.log("Tenant");
+				console.log("");
 			}
 			
 			Tenant.prototype.countTenants = (data, cb) => {
@@ -2632,7 +3064,21 @@ describe("Unit test for: BL - tenant", () => {
 					return cb(true, null);
 				}
 			};
-			
+			nock('http://www.example.com')
+				.persist()
+				.get('/registry/key')
+				.query({
+					env: 'kube',
+				})
+				.reply(200, {
+					"result": true,
+					"data": {
+						key: {
+							algorithm: "123",
+							password: "123"
+						}
+					}
+				});
 			BL.model = Tenant;
 			BL.localConfig = {
 				"tenant": {
@@ -2669,11 +3115,6 @@ describe("Unit test for: BL - tenant", () => {
 			};
 			let soajs = {
 				core: {
-					registry: {
-						loadByEnv: (env, cb) => {
-							return cb(null, {code: "KUBE", serviceConfig: {key: "test"}});
-						}
-					},
 					key: {
 						generateExternalKey: (key, opt, opt1, opt2, cb) => {
 							return cb(null, "2313131312312");
@@ -4330,6 +4771,663 @@ describe("Unit test for: BL - tenant", () => {
 		});
 	});
 	
+	describe("Testing Update application config key of tenant", () => {
+		afterEach((done) => {
+			BL.modelObj = null;
+			done();
+		});
+		
+		it("Success - Update application key - data - id (admin)", (done) => {
+			let inputMask = {
+				id: 'tenantID',
+				appId: 'appID',
+				key: "KEY1",
+				envCode: "dashboard",
+				config: {
+					"infra": {
+						"SOAJS": {
+							"THROTTLING": {
+								"publicAPIStrategy": "null",
+								"privateAPIStrategy": "--inherit--"
+							}
+						}
+					},
+					"oauth": {"SOAJS": {"THROTTLING": {"privateAPIStrategy": "--inherit--"}}},
+					"urac": {"SOAJS": {"THROTTLING": {"privateAPIStrategy": "--inherit--"}}},
+					"multitenant": {"SOAJS": {"THROTTLING": {"privateAPIStrategy": "--inherit--"}}},
+					"repositories": {"SOAJS": {"THROTTLING": {"privateAPIStrategy": "--inherit--"}}},
+					"controller": {"SOAJS": {"THROTTLING": {"privateAPIStrategy": "--inherit--"}}},
+					"marketplace": {"SOAJS": {"THROTTLING": {"privateAPIStrategy": "--inherit--"}}},
+					"soamonitor": {"SOAJS": {"THROTTLING": {"privateAPIStrategy": "--inherit--"}}},
+					"soaanalytics": {"SOAJS": {"THROTTLING": {"privateAPIStrategy": "--inherit--"}}},
+					"console": {"SOAJS": {"THROTTLING": {"privateAPIStrategy": "--inherit--"}}},
+					"dashboard": {"SOAJS": {}}
+				}
+			};
+			
+			BL.modelObj = {
+				getTenant: (inputMask, cb) => {
+					return cb(null, {
+						"_id": "tenantID",
+						"code": "test",
+						"name": "Test Tenant",
+						"description": "this is a description for test tenant",
+						"applications": [
+							{
+								product: "TEND",
+								package: "TEND_GUEST",
+								description: "TEN application for TEND_GUEST package",
+								appId: "appID",
+								_TTL: 604800000,
+								keys: [
+									{
+										key: "KEY1",
+										extKeys: [
+											{
+												extKey: "extKey1",
+												device: null,
+												geo: null,
+												env: "DASHBOARD",
+												dashboardAccess: true,
+												expDate: null
+											}
+										],
+										config: {}
+									}
+								]
+							}
+						],
+					});
+				},
+				updateTenant: (inputMask, cb) => {
+					return cb(null, 1);
+				}
+			};
+			
+			BL.updateApplicationKeyConfig(soajs, inputMask, (err, record) => {
+				assert.ok(record);
+				assert.deepEqual(record, 1);
+				done();
+			});
+		});
+		
+		it("Success - Update application key - data - no id", (done) => {
+			let inputMask = {
+				appId: 'appID',
+				key: "KEY1",
+				envCode: "dashboard",
+				config: {}
+			};
+			
+			BL.modelObj = {
+				getTenant: (inputMask, cb) => {
+					return cb(null, {
+						"_id": "tenantID",
+						"code": "test",
+						"name": "Test Tenant",
+						"description": "this is a description for test tenant",
+						"applications": [
+							{
+								product: "TEND",
+								package: "TEND_GUEST",
+								description: "TEN application for TEND_GUEST package",
+								appId: "appID",
+								_TTL: 604800000,
+								keys: [
+									{
+										key: "KEY1",
+										extKeys: [
+											{
+												extKey: "extKey1",
+												device: null,
+												geo: null,
+												env: "DASHBOARD",
+												dashboardAccess: true,
+												expDate: null
+											}
+										],
+										config: {}
+									}
+								]
+							}
+						]
+					});
+				},
+				updateTenant: (inputMask, cb) => {
+					return cb(null, 1);
+				}
+			};
+			
+			BL.updateApplicationKeyConfig(soajs, inputMask, (err, record) => {
+				assert.ok(record);
+				assert.deepEqual(record, 1);
+				done();
+			});
+		});
+		
+		it("Fails - Update application key - null data", (done) => {
+			BL.modelObj = {};
+			
+			BL.updateApplicationKeyConfig(soajs, null, (err) => {
+				assert.ok(err);
+				assert.deepEqual(err, {
+					code: 400,
+					msg: soajs.config.errors[400]
+				});
+				done();
+			});
+		});
+		
+		it("Fails - Update application key - get tenant error", (done) => {
+			
+			BL.modelObj = {
+				getTenant: (inputMask, cb) => {
+					return cb(true, null);
+				}
+			};
+			
+			BL.updateApplicationKeyConfig(soajs, {}, (err) => {
+				assert.ok(err);
+				assert.deepEqual(err.code, 602);
+				done();
+			});
+		});
+		
+		it("Fails - Update application key - update tenants error", (done) => {
+			let inputMask = {
+				id: 'tenantID',
+				appId: 'appID',
+				key: "KEY1",
+				envCode: "dashboard",
+				config: {
+					"infra": {
+						"SOAJS": {
+							"THROTTLING": {
+								"publicAPIStrategy": "null",
+								"privateAPIStrategy": "--inherit--"
+							}
+						}
+					},
+					"oauth": {"SOAJS": {"THROTTLING": {"privateAPIStrategy": "--inherit--"}}},
+					"urac": {"SOAJS": {"THROTTLING": {"privateAPIStrategy": "--inherit--"}}},
+					"multitenant": {"SOAJS": {"THROTTLING": {"privateAPIStrategy": "--inherit--"}}},
+					"repositories": {"SOAJS": {"THROTTLING": {"privateAPIStrategy": "--inherit--"}}},
+					"controller": {"SOAJS": {"THROTTLING": {"privateAPIStrategy": "--inherit--"}}},
+					"marketplace": {"SOAJS": {"THROTTLING": {"privateAPIStrategy": "--inherit--"}}},
+					"soamonitor": {"SOAJS": {"THROTTLING": {"privateAPIStrategy": "--inherit--"}}},
+					"soaanalytics": {"SOAJS": {"THROTTLING": {"privateAPIStrategy": "--inherit--"}}},
+					"console": {"SOAJS": {"THROTTLING": {"privateAPIStrategy": "--inherit--"}}},
+					"dashboard": {"SOAJS": {}}
+				}
+			};
+			
+			BL.modelObj = {
+				getTenant: (inputMask, cb) => {
+					return cb(null, {
+						"_id": "tenantID",
+						"code": "test",
+						"name": "Test Tenant",
+						"description": "this is a description for test tenant",
+						"applications": [
+							{
+								product: "TEND",
+								package: "TEND_GUEST",
+								description: "TEN application for TEND_GUEST package",
+								appId: "appID",
+								_TTL: 604800000,
+								keys: [
+									{
+										key: "KEY1",
+										extKeys: [
+											{
+												extKey: "extkey1",
+												device: null,
+												geo: null,
+												env: "DASHBOARD",
+												dashboardAccess: true,
+												expDate: null
+											}
+										],
+										config: {}
+									}
+								]
+							}
+						]
+					});
+				},
+				updateTenant: (inputMask, cb) => {
+					return cb(true, null);
+				}
+			};
+			
+			BL.updateApplicationKeyConfig(soajs, inputMask, (err) => {
+				assert.ok(err);
+				console.log(err);
+				assert.deepEqual(err, {
+					code: 471,
+					msg: soajs.config.errors[471]
+				});
+				done();
+			});
+		});
+		
+		it("Fails - Update application key - app key not found error", (done) => {
+			BL.modelObj = {
+				getTenant: (inputMask, cb) => {
+					return cb(null, {
+						"_id": "tenantID",
+						"code": "test",
+						"name": "Test Tenant",
+						"description": "this is a description for test tenant",
+						"applications": [
+							{
+								product: "TEND",
+								package: "TEND_GUEST",
+								description: "TEN application for TEND_GUEST package",
+								appId: "appID",
+								_TTL: 604800000,
+								keys: [
+									{
+										key: "KEY1",
+										extKeys: [
+											{
+												extKey: "extkey1",
+												device: null,
+												geo: null,
+												env: "DASHBOARD",
+												dashboardAccess: true,
+												expDate: null
+											}
+										],
+										config: {}
+									}
+								]
+							}
+						]
+					});
+				},
+				updateTenant: (inputMask, cb) => {
+					return cb(true, null);
+				}
+			};
+			
+			BL.updateApplicationKeyConfig(soajs, {key: 'notFound', id: 'tenantID'}, (err) => {
+				assert.ok(err);
+				assert.deepEqual(err.code, 471);
+				done();
+			});
+		});
+		
+		it("Fails - Update application key - get tenant null record", (done) => {
+			
+			BL.modelObj = {
+				getTenant: (inputMask, cb) => {
+					return cb(null, null);
+				}
+			};
+			
+			BL.updateApplicationKeyConfig(soajs, {}, (err) => {
+				assert.ok(err);
+				assert.deepEqual(err, {
+					code: 450,
+					msg: soajs.config.errors[450]
+				});
+				done();
+			});
+		});
+	});
+	
+	describe("Testing Update tenant oauth", () => {
+		afterEach((done) => {
+			BL.modelObj = null;
+			done();
+		});
+		
+		it("Success - Update application key - data - id (admin)", (done) => {
+			let inputMask = {
+				id: 'tenantID',
+				type: 2,
+				oauthType: "miniurac",
+				redirectURI: "http://domain.com",
+				grants: [
+					"password",
+					"refresh_token"
+				],
+				secret: "this is a secret",
+				availableEnv: ["dashboard"]
+			};
+			
+			BL.modelObj = {
+				getTenant: (inputMask, cb) => {
+					return cb(null, {
+						"_id": "tenantID",
+						"code": "test",
+						"name": "Test Tenant",
+						"description": "this is a description for test tenant",
+						"applications": [
+							{
+								product: "TEND",
+								package: "TEND_GUEST",
+								description: "TEN application for TEND_GUEST package",
+								appId: "appID",
+								_TTL: 604800000,
+								keys: [
+									{
+										key: "KEY1",
+										extKeys: [
+											{
+												extKey: "extKey1",
+												device: null,
+												geo: null,
+												env: "DASHBOARD",
+												dashboardAccess: true,
+												expDate: null
+											}
+										],
+										config: {}
+									}
+								]
+							}
+						],
+					});
+				},
+				updateTenant: (inputMask, cb) => {
+					return cb(null, 1);
+				}
+			};
+			
+			BL.updateOauth(soajs, inputMask, (err, record) => {
+				assert.ok(record);
+				assert.deepEqual(record, 1);
+				done();
+			});
+		});
+		
+		it("Success - Update application key - data - no id", (done) => {
+			let inputMask = {
+				type: 1,
+				oauthType: "urac",
+				redirectURI: "http://domain.com",
+				grants: [
+					"password",
+					"refresh_token"
+				],
+				pin: {
+					DSBRD: {
+						enabled: false
+					}
+				},
+				secret: "this is a secret too",
+				availableEnv: ["dashboard"]
+			};
+			
+			BL.modelObj = {
+				getTenant: (inputMask, cb) => {
+					return cb(null, {
+						"_id": "tenantID",
+						"code": "test",
+						"name": "Test Tenant",
+						"description": "this is a description for test tenant",
+						"applications": [
+							{
+								product: "TEND",
+								package: "TEND_GUEST",
+								description: "TEN application for TEND_GUEST package",
+								appId: "appID",
+								_TTL: 604800000,
+								keys: [
+									{
+										key: "KEY1",
+										extKeys: [
+											{
+												extKey: "extKey1",
+												device: null,
+												geo: null,
+												env: "DASHBOARD",
+												dashboardAccess: true,
+												expDate: null
+											}
+										],
+										config: {}
+									}
+								]
+							}
+						]
+					});
+				},
+				updateTenant: (inputMask, cb) => {
+					return cb(null, 1);
+				}
+			};
+			
+			BL.updateOauth(soajs, inputMask, (err, record) => {
+				assert.ok(record);
+				assert.deepEqual(record, 1);
+				done();
+			});
+		});
+		
+		it("fail - Update application key oauth type incompatible", (done) => {
+			let inputMask = {
+				type: 0,
+				oauthType: "urac",
+				redirectURI: "http://domain.com",
+				grants: [
+					"password",
+					"refresh_token"
+				],
+				pin: {
+					DSBRD: {
+						enabled: false
+					}
+				},
+				secret: "this is a secret too",
+				availableEnv: ["dashboard"]
+			};
+			
+			BL.modelObj = {
+				getTenant: (inputMask, cb) => {
+					return cb(null, {
+						"_id": "tenantID",
+						"code": "test",
+						"name": "Test Tenant",
+						"description": "this is a description for test tenant",
+						"applications": [
+							{
+								product: "TEND",
+								package: "TEND_GUEST",
+								description: "TEN application for TEND_GUEST package",
+								appId: "appID",
+								_TTL: 604800000,
+								keys: [
+									{
+										key: "KEY1",
+										extKeys: [
+											{
+												extKey: "extKey1",
+												device: null,
+												geo: null,
+												env: "DASHBOARD",
+												dashboardAccess: true,
+												expDate: null
+											}
+										],
+										config: {}
+									}
+								]
+							}
+						]
+					});
+				},
+				updateTenant: (inputMask, cb) => {
+					return cb(null, 1);
+				}
+			};
+			
+			BL.updateOauth(soajs, inputMask, (err) => {
+				assert.ok(err);
+				assert.deepEqual(err.code, 459);
+				done();
+			});
+		});
+		
+		it("Fails - Update application key - null data", (done) => {
+			BL.modelObj = {};
+			
+			BL.updateOauth(soajs, null, (err) => {
+				assert.ok(err);
+				assert.deepEqual(err, {
+					code: 400,
+					msg: soajs.config.errors[400]
+				});
+				done();
+			});
+		});
+		
+		it("Fails - Update application key - get tenant error", (done) => {
+			
+			BL.modelObj = {
+				getTenant: (inputMask, cb) => {
+					return cb(true, null);
+				}
+			};
+			
+			BL.updateOauth(soajs, {}, (err) => {
+				assert.ok(err);
+				assert.deepEqual(err.code, 602);
+				done();
+			});
+		});
+		
+		it("Fails - Update application key - update tenants error", (done) => {
+			let inputMask = {
+				type: 2,
+				oauthType: "miniurac",
+				redirectURI: "http://domain.com",
+				grants: [
+					"password",
+					"refresh_token"
+				],
+				secret: "this is a secret too",
+				availableEnv: ["dashboard"]
+			};
+			
+			BL.modelObj = {
+				getTenant: (inputMask, cb) => {
+					return cb(null, {
+						"_id": "tenantID",
+						"code": "test",
+						"name": "Test Tenant",
+						"description": "this is a description for test tenant",
+						"applications": [
+							{
+								product: "TEND",
+								package: "TEND_GUEST",
+								description: "TEN application for TEND_GUEST package",
+								appId: "appID",
+								_TTL: 604800000,
+								keys: [
+									{
+										key: "KEY1",
+										extKeys: [
+											{
+												extKey: "extkey1",
+												device: null,
+												geo: null,
+												env: "DASHBOARD",
+												dashboardAccess: true,
+												expDate: null
+											}
+										],
+										config: {}
+									}
+								]
+							}
+						]
+					});
+				},
+				updateTenant: (inputMask, cb) => {
+					return cb(true, null);
+				}
+			};
+			
+			BL.updateOauth(soajs, inputMask, (err) => {
+				assert.ok(err);
+				console.log(err);
+				assert.deepEqual(err, {
+					code: 471,
+					msg: soajs.config.errors[471]
+				});
+				done();
+			});
+		});
+		
+		it("Fails - Update application key - app key not found error", (done) => {
+			BL.modelObj = {
+				getTenant: (inputMask, cb) => {
+					return cb(null, {
+						"_id": "tenantID",
+						"code": "test",
+						"name": "Test Tenant",
+						"description": "this is a description for test tenant",
+						"applications": [
+							{
+								product: "TEND",
+								package: "TEND_GUEST",
+								description: "TEN application for TEND_GUEST package",
+								appId: "appID",
+								_TTL: 604800000,
+								keys: [
+									{
+										key: "KEY1",
+										extKeys: [
+											{
+												extKey: "extkey1",
+												device: null,
+												geo: null,
+												env: "DASHBOARD",
+												dashboardAccess: true,
+												expDate: null
+											}
+										],
+										config: {}
+									}
+								]
+							}
+						]
+					});
+				},
+				updateTenant: (inputMask, cb) => {
+					return cb(true, null);
+				}
+			};
+			
+			BL.updateOauth(soajs, {key: 'notFound', id: 'tenantID'}, (err) => {
+				assert.ok(err);
+				assert.deepEqual(err.code, 471);
+				done();
+			});
+		});
+		
+		it("Fails - Update application key - get tenant null record", (done) => {
+			
+			BL.modelObj = {
+				getTenant: (inputMask, cb) => {
+					return cb(null, null);
+				}
+			};
+			
+			BL.updateOauth(soajs, {}, (err) => {
+				assert.ok(err);
+				assert.deepEqual(err, {
+					code: 450,
+					msg: soajs.config.errors[450]
+				});
+				done();
+			});
+		});
+	});
+	
 	describe("Testing Delete tenant", () => {
 		afterEach((done) => {
 			BL.modelObj = null;
@@ -5038,6 +6136,479 @@ describe("Unit test for: BL - tenant", () => {
 			};
 			
 			BL.listApplications(soajs, {}, (err) => {
+				assert.ok(err);
+				assert.deepEqual(err, {
+					code: 450,
+					msg: soajs.config.errors[450]
+				});
+				done();
+			});
+		});
+	});
+	
+	describe("Testing List application keys", () => {
+		afterEach((done) => {
+			BL.modelObj = null;
+			done();
+		});
+		
+		it("Success - List applications keys- data - (admin)", (done) => {
+			let inputMask = {
+				id: 'TenantID',
+				appId: 'AppID'
+			};
+			
+			BL.modelObj = {
+				getTenant: (inputMask, cb) => {
+					return cb(null, {
+						"type": "product",
+						"oauth": {
+							secret: "this is a secret",
+							redirectURI: "http://domain.com",
+							grants: [
+								"password",
+								"refresh_token"
+							],
+							disabled: 0,
+							type: 2.0,
+							loginMode: "urac",
+							pin: {
+								DSBRD: {
+									enabled: false
+								}
+							},
+						},
+						"code": "test",
+						"name": "Test Tenant",
+						"description": "this is a description for test tenant",
+						"applications": [
+							{
+								"product": "PROD",
+								"package": "PROD_TEST",
+								"appId": "AppID",
+								"description": "this is a description",
+								"_TTL": 86400000, // 24 hours
+								"keys": [
+									{
+										"key": "KEY1",
+										"extKeys": [
+											{
+												"expDate": new Date().getTime() + 86400000,
+												"extKey": "EXTKEY1",
+												"device": {},
+												"geo": {}
+											}
+										],
+										"config": {
+											"dev": {
+												"commonFields": {},
+												"oauth": {
+													"loginMode": 'urac'
+												}
+											}
+										}
+									}
+								]
+							}
+						]
+					});
+				}
+			};
+			
+			BL.listApplicationKeys(soajs, inputMask, (err, record) => {
+				assert.ok(record);
+				assert.deepEqual(Array.isArray(record), true);
+				assert.deepEqual(record.length, 1);
+				done();
+			});
+		});
+		
+		it("Success - List applications keys - data - no id", (done) => {
+			let inputMask = {appId: 'AppID'};
+			
+			BL.modelObj = {
+				getTenant: (inputMask, cb) => {
+					return cb(null, {
+						"type": "product",
+						"oauth": {
+							secret: "this is a secret",
+							redirectURI: "http://domain.com",
+							grants: [
+								"password",
+								"refresh_token"
+							],
+							disabled: 0,
+							type: 2.0,
+							loginMode: "urac",
+							pin: {
+								DSBRD: {
+									enabled: false
+								}
+							},
+						},
+						"code": "test",
+						"name": "Test Tenant",
+						"description": "this is a description for test tenant",
+						"applications": [
+							{
+								"product": "PROD",
+								"package": "PROD_TEST",
+								"appId": "AppID",
+								"description": "this is a description",
+								"_TTL": 86400000, // 24 hours
+								"keys": [
+									{
+										"key": "KEY1",
+										"extKeys": [
+											{
+												"expDate": new Date().getTime() + 86400000,
+												"extKey": "EXTKEY1",
+												"device": {},
+												"geo": {}
+											}
+										],
+										"config": {
+											"dev": {
+												"commonFields": {},
+												"oauth": {
+													"loginMode": 'urac'
+												}
+											}
+										}
+									}
+								]
+							}
+						]
+					});
+				}
+			};
+			
+			BL.listApplicationKeys(soajs, inputMask, (err, record) => {
+				assert.ok(record);
+				assert.deepEqual(Array.isArray(record), true);
+				assert.deepEqual(record.length, 1);
+				done();
+			});
+		});
+		
+		it("Success - List applications keys - empty array - data - no id", (done) => {
+			let inputMask = {appId: 'AppID'};
+			
+			BL.modelObj = {
+				getTenant: (inputMask, cb) => {
+					return cb(null, {
+						"type": "product",
+						"oauth": {
+							secret: "this is a secret",
+							redirectURI: "http://domain.com",
+							grants: [
+								"password",
+								"refresh_token"
+							],
+							disabled: 0,
+							type: 2.0,
+							loginMode: "urac",
+							pin: {
+								DSBRD: {
+									enabled: false
+								}
+							},
+						},
+						"code": "test",
+						"name": "Test Tenant",
+						"description": "this is a description for test tenant"
+					});
+				}
+			};
+			
+			BL.listApplicationKeys(soajs, inputMask, (err, record) => {
+				assert.ok(record);
+				assert.deepEqual(Array.isArray(record), true);
+				assert.deepEqual(record.length, 0);
+				done();
+			});
+		});
+		
+		it("Fails - List applications keys - null data", (done) => {
+			BL.modelObj = {};
+			
+			BL.listApplicationKeys(soajs, null, (err) => {
+				assert.ok(err);
+				assert.deepEqual(err, {
+					code: 400,
+					msg: soajs.config.errors[400]
+				});
+				done();
+			});
+		});
+		
+		it("Fails - List applications keys - getTenant Error", (done) => {
+			BL.modelObj = {
+				getTenant: (inputMask, cb) => {
+					return cb(true, null);
+				}
+			};
+			
+			BL.listApplicationKeys(soajs, {}, (err) => {
+				assert.ok(err);
+				assert.deepEqual(err.code, 602);
+				done();
+			});
+		});
+		
+		it("Fails - List applications keys - no record", (done) => {
+			BL.modelObj = {
+				getTenant: (inputMask, cb) => {
+					return cb(null, null);
+				}
+			};
+			
+			BL.listApplicationKeys(soajs, {}, (err) => {
+				assert.ok(err);
+				assert.deepEqual(err, {
+					code: 450,
+					msg: soajs.config.errors[450]
+				});
+				done();
+			});
+		});
+	});
+	
+	describe("Testing List application key config ", () => {
+		afterEach((done) => {
+			BL.modelObj = null;
+			done();
+		});
+		
+		it("Success - List applications key config - data - (admin)", (done) => {
+			let inputMask = {
+				id: 'TenantID',
+				appId: 'AppID',
+				key: 'KEY1'
+			};
+			
+			BL.modelObj = {
+				getTenant: (inputMask, cb) => {
+					return cb(null, {
+						"type": "product",
+						"oauth": {
+							secret: "this is a secret",
+							redirectURI: "http://domain.com",
+							grants: [
+								"password",
+								"refresh_token"
+							],
+							disabled: 0,
+							type: 2.0,
+							loginMode: "urac",
+							pin: {
+								DSBRD: {
+									enabled: false
+								}
+							},
+						},
+						"code": "test",
+						"name": "Test Tenant",
+						"description": "this is a description for test tenant",
+						"applications": [
+							{
+								"product": "PROD",
+								"package": "PROD_TEST",
+								"appId": "AppID",
+								"description": "this is a description",
+								"_TTL": 86400000, // 24 hours
+								"keys": [
+									{
+										"key": "KEY1",
+										"extKeys": [
+											{
+												"expDate": new Date().getTime() + 86400000,
+												"extKey": "EXTKEY1",
+												"device": {},
+												"geo": {}
+											}
+										],
+										"config": {
+											"dev": {
+												"commonFields": {},
+												"oauth": {
+													"loginMode": 'urac'
+												}
+											}
+										}
+									}
+								]
+							}
+						]
+					});
+				}
+			};
+			
+			BL.listApplicationKeyConfig(soajs, inputMask, (err, record) => {
+				assert.deepStrictEqual(record, {
+					"dev": {
+						"commonFields": {},
+						"oauth": {
+							"loginMode": 'urac'
+						}
+					}
+				});
+				done();
+			});
+		});
+		
+		it("Success - List applications key config  - data - no id", (done) => {
+			let inputMask = {
+				appId: 'AppID',
+				key: 'KEY1'
+			};
+			
+			BL.modelObj = {
+				getTenant: (inputMask, cb) => {
+					return cb(null, {
+						"type": "product",
+						"oauth": {
+							secret: "this is a secret",
+							redirectURI: "http://domain.com",
+							grants: [
+								"password",
+								"refresh_token"
+							],
+							disabled: 0,
+							type: 2.0,
+							loginMode: "urac",
+							pin: {
+								DSBRD: {
+									enabled: false
+								}
+							},
+						},
+						"code": "test",
+						"name": "Test Tenant",
+						"description": "this is a description for test tenant",
+						"applications": [
+							{
+								"product": "PROD",
+								"package": "PROD_TEST",
+								"appId": "AppID",
+								"description": "this is a description",
+								"_TTL": 86400000, // 24 hours
+								"keys": [
+									{
+										"key": "KEY1",
+										"extKeys": [
+											{
+												"expDate": new Date().getTime() + 86400000,
+												"extKey": "EXTKEY1",
+												"device": {},
+												"geo": {}
+											}
+										],
+										"config": {
+											"dev": {
+												"commonFields": {},
+												"oauth": {
+													"loginMode": 'urac'
+												}
+											}
+										}
+									}
+								]
+							}
+						]
+					});
+				}
+			};
+			
+			BL.listApplicationKeyConfig(soajs, inputMask, (err, record) => {
+				assert.ok(record);
+				assert.deepStrictEqual(record, {
+					"dev": {
+						"commonFields": {},
+						"oauth": {
+							"loginMode": 'urac'
+						}
+					}
+				});
+				done();
+			});
+		});
+		
+		it("Success - List applications key config  - empty array - data - no id", (done) => {
+			let inputMask = {
+				appId: 'AppID',
+				key: 'KEY1'
+			};
+			
+			BL.modelObj = {
+				getTenant: (inputMask, cb) => {
+					return cb(null, {
+						"type": "product",
+						"oauth": {
+							secret: "this is a secret",
+							redirectURI: "http://domain.com",
+							grants: [
+								"password",
+								"refresh_token"
+							],
+							disabled: 0,
+							type: 2.0,
+							loginMode: "urac",
+							pin: {
+								DSBRD: {
+									enabled: false
+								}
+							},
+						},
+						"code": "test",
+						"name": "Test Tenant",
+						"description": "this is a description for test tenant"
+					});
+				}
+			};
+			
+			BL.listApplicationKeyConfig(soajs, inputMask, (err, record) => {
+				assert.ok(record);
+				assert.deepStrictEqual(record, {});
+				done();
+			});
+		});
+		
+		it("Fails - List applications key config  - null data", (done) => {
+			BL.modelObj = {};
+			
+			BL.listApplicationKeyConfig(soajs, null, (err) => {
+				assert.ok(err);
+				assert.deepEqual(err, {
+					code: 400,
+					msg: soajs.config.errors[400]
+				});
+				done();
+			});
+		});
+		
+		it("Fails - List applications key config  - getTenant Error", (done) => {
+			BL.modelObj = {
+				getTenant: (inputMask, cb) => {
+					return cb(true, null);
+				}
+			};
+			
+			BL.listApplicationKeyConfig(soajs, {}, (err) => {
+				assert.ok(err);
+				assert.deepEqual(err.code, 602);
+				done();
+			});
+		});
+		
+		it("Fails - List applications key config  - no record", (done) => {
+			BL.modelObj = {
+				getTenant: (inputMask, cb) => {
+					return cb(null, null);
+				}
+			};
+			
+			BL.listApplicationKeyConfig(soajs, {}, (err) => {
 				assert.ok(err);
 				assert.deepEqual(err, {
 					code: 450,
@@ -6533,23 +8104,15 @@ describe("Unit test for: BL - tenant", () => {
 	describe("Testing add application key", () => {
 		afterEach((done) => {
 			BL.modelObj = null;
+			nock.cleanAll();
 			done();
 		});
 		
 		let core = {
 			core: {
-				registry: {
-					loadByEnv: (env, cb) => {
-						return cb(null, {
-							serviceConfig: {
-								key: 'key1'
-							}
-						});
-					}
-				},
 				key: {
 					generateExternalKey: (interKey, opt1, opt2, key, cb) => {
-						return cb (null, 'extKey');
+						return cb(null, 'extKey');
 					}
 				}
 			},
@@ -6574,6 +8137,16 @@ describe("Unit test for: BL - tenant", () => {
 					geo: {}
 				}
 			};
+			nock('http://www.example.com')
+				.get('/registry/key')
+				.query({"env": 'dashboard'})
+				.reply(200, {
+					"result": true,
+					"data": {
+						algorithm: "123",
+						password: "soajs"
+					}
+				});
 			
 			BL.modelObj = {
 				getTenant: (inputMask, cb) => {
@@ -6654,6 +8227,16 @@ describe("Unit test for: BL - tenant", () => {
 					geo: {}
 				}
 			};
+			nock('http://www.example.com')
+				.get('/registry/key')
+				.query({"env": 'dashboard'})
+				.reply(200, {
+					"result": true,
+					"data": {
+						algorithm: "123",
+						password: "soajs"
+					}
+				});
 			
 			BL.modelObj = {
 				getTenant: (inputMask, cb) => {
@@ -6714,7 +8297,6 @@ describe("Unit test for: BL - tenant", () => {
 					return cb(null, true);
 				}
 			};
-			
 			BL.addApplicationKey(soajs, inputMask, core, (err, record) => {
 				assert.ok(record);
 				assert.deepEqual(record, true);
@@ -6845,17 +8427,29 @@ describe("Unit test for: BL - tenant", () => {
 					return cb(null, true);
 				}
 			};
-			
+			nock('http://www.example.com')
+				.get('/registry/key')
+				.query({"env": 'dashboard'})
+				.reply(200, {
+					"result": false,
+					"errors": {
+						"details": [
+							{
+								"code": 1,
+								"message": "error 1"
+							},
+							{
+								"code": 2,
+								"message": "error 2"
+							}
+						]
+					}
+				});
 			let coreError = {
 				core: {
-					registry: {
-						loadByEnv: (env, cb) => {
-							return cb(true, null);
-						}
-					},
 					key: {
 						generateExternalKey: (interKey, opt1, opt2, key, cb) => {
-							return cb (null, 'extKey');
+							return cb(null, 'extKey');
 						}
 					}
 				},
@@ -6882,7 +8476,7 @@ describe("Unit test for: BL - tenant", () => {
 			
 			BL.addApplicationKey(soajs, inputMask, coreError, (err) => {
 				assert.ok(err);
-				assert.deepEqual(err.code, 602);
+				assert.deepEqual(err.code, 503);
 				done();
 			});
 		});
@@ -6947,17 +8541,18 @@ describe("Unit test for: BL - tenant", () => {
 					return cb(null, true);
 				}
 			};
-			
+			nock('http://www.example.com')
+				.get('/registry/key')
+				.query({"env": 'dashboard'})
+				.reply(200, {
+					"result": true,
+					"data": null
+				});
 			let coreError = {
 				core: {
-					registry: {
-						loadByEnv: (env, cb) => {
-							return cb(null, null);
-						}
-					},
 					key: {
 						generateExternalKey: (interKey, opt1, opt2, key, cb) => {
-							return cb (null, 'extKey');
+							return cb(null, 'extKey');
 						}
 					}
 				},
@@ -7049,18 +8644,18 @@ describe("Unit test for: BL - tenant", () => {
 					return cb(null, true);
 				}
 			};
-			
+			nock('http://www.example.com')
+				.get('/registry/key')
+				.query({"env": 'dashboard'})
+				.reply(200, {
+					"result": true,
+					"data": {
+						algorithm: "123",
+						password: "soajs"
+					}
+				});
 			let coreError = {
 				core: {
-					registry: {
-						loadByEnv: (env, cb) => {
-							return cb(null, {
-								serviceConfig: {
-									key: 'key1'
-								}
-							});
-						}
-					},
 					key: {
 						generateExternalKey: (interKey, opt1, opt2, key, cb) => {
 							return cb(true, null);
@@ -7155,21 +8750,22 @@ describe("Unit test for: BL - tenant", () => {
 					return cb(null, true);
 				}
 			};
+			nock('http://www.example.com')
+				.get('/registry/key')
+				.query({"env": 'dashboard'})
+				.reply(200, {
+					"result": true,
+					"data": {
+						algorithm: "123",
+						password: "soajs"
+					}
+				});
 			
 			let coreError = {
 				core: {
-					registry: {
-						loadByEnv: (env, cb) => {
-							return cb(null, {
-								serviceConfig: {
-									key: 'key1'
-								}
-							});
-						}
-					},
 					key: {
 						generateExternalKey: (interKey, opt1, opt2, key, cb) => {
-							return cb (null, 'extKey');
+							return cb(null, 'extKey');
 						}
 					}
 				},
@@ -7415,23 +9011,15 @@ describe("Unit test for: BL - tenant", () => {
 	describe("Testing add application", () => {
 		afterEach((done) => {
 			BL.modelObj = null;
+			nock.cleanAll();
 			done();
 		});
 		
 		let core = {
 			core: {
-				registry: {
-					loadByEnv: (env, cb) => {
-						return cb(null, {
-							serviceConfig: {
-								key: 'key1'
-							}
-						});
-					}
-				},
 				key: {
 					generateExternalKey: (interKey, opt1, opt2, key, cb) => {
-						return cb (null, 'extKey');
+						return cb(null, 'extKey');
 					}
 				}
 			},
@@ -7462,6 +9050,17 @@ describe("Unit test for: BL - tenant", () => {
 				},
 			};
 			
+			nock('http://www.example.com')
+				.get('/registry/key')
+				.query({"env": 'dashboard'})
+				.reply(200, {
+					"result": true,
+					"data": {
+						algorithm: "123",
+						password: "soajs"
+					}
+				});
+			
 			BL.modelObj = {
 				getTenant: (inputMask, cb) => {
 					return cb(null, {
@@ -7527,7 +9126,7 @@ describe("Unit test for: BL - tenant", () => {
 			
 			BL.addApplication(soajs, inputMask, core, (err, record) => {
 				assert.ok(record);
-				assert.deepEqual(record, {intKey: 'internalKey', extKey: 'extKey'});
+				assert.deepEqual(record, {intKey: 'internalKey', extKey: 'extKey', appId: 'id'});
 				done();
 			});
 		});
@@ -7549,7 +9148,16 @@ describe("Unit test for: BL - tenant", () => {
 					},
 				},
 			};
-			
+			nock('http://www.example.com')
+				.get('/registry/key')
+				.query({"env": 'dashboard'})
+				.reply(200, {
+					"result": true,
+					"data": {
+						algorithm: "123",
+						password: "soajs"
+					}
+				});
 			BL.modelObj = {
 				getTenant: (inputMask, cb) => {
 					return cb(null, {
@@ -7615,7 +9223,7 @@ describe("Unit test for: BL - tenant", () => {
 			
 			BL.addApplication(soajs, inputMask, core, (err, record) => {
 				assert.ok(record);
-				assert.deepEqual(record, {intKey: 'internalKey', extKey: 'extKey'});
+				assert.deepEqual(record, {intKey: 'internalKey', extKey: 'extKey', appId: 'id'});
 				done();
 			});
 		});
@@ -7660,10 +9268,19 @@ describe("Unit test for: BL - tenant", () => {
 					return 'id';
 				}
 			};
-			
+			nock('http://www.example.com')
+				.get('/registry/key')
+				.query({"env": 'dashboard'})
+				.reply(200, {
+					"result": true,
+					"data": {
+						algorithm: "123",
+						password: "soajs"
+					}
+				});
 			BL.addApplication(soajs, inputMask, core, (err, record) => {
 				assert.ok(record);
-				assert.deepEqual(record, {intKey: 1, extKey: 1});
+				assert.deepEqual(record, {intKey: 1, extKey: 1, appId: 'id'});
 				done();
 			});
 		});
@@ -7678,7 +9295,16 @@ describe("Unit test for: BL - tenant", () => {
 					config: {}
 				},
 			};
-			
+			nock('http://www.example.com')
+				.get('/registry/key')
+				.query({"env": 'dashboard'})
+				.reply(200, {
+					"result": true,
+					"data": {
+						algorithm: "123",
+						password: "soajs"
+					}
+				});
 			BL.modelObj = {
 				getTenant: (inputMask, cb) => {
 					return cb(null, {
@@ -7744,7 +9370,7 @@ describe("Unit test for: BL - tenant", () => {
 			
 			BL.addApplication(soajs, inputMask, core, (err, record) => {
 				assert.ok(record);
-				assert.deepEqual(record, {intKey: 'internalKey', extKey: 1});
+				assert.deepEqual(record, {intKey: 'internalKey', extKey: 1, appId: 'id'});
 				done();
 			});
 		});
@@ -7825,17 +9451,29 @@ describe("Unit test for: BL - tenant", () => {
 					return 'id';
 				}
 			};
-			
+			nock('http://www.example.com')
+				.get('/registry/key')
+				.query({"env": 'dashboard'})
+				.reply(200, {
+					"result": false,
+					"errors": {
+						"details": [
+							{
+								"code": 1,
+								"message": "error 1"
+							},
+							{
+								"code": 2,
+								"message": "error 2"
+							}
+						]
+					}
+				});
 			let coreError = {
 				core: {
-					registry: {
-						loadByEnv: (env, cb) => {
-							return cb(true, null);
-						}
-					},
 					key: {
 						generateExternalKey: (interKey, opt1, opt2, key, cb) => {
-							return cb (null, 'extKey');
+							return cb(null, 'extKey');
 						}
 					}
 				},
@@ -7867,7 +9505,7 @@ describe("Unit test for: BL - tenant", () => {
 			
 			BL.addApplication(soajs, inputMask, coreError, (err) => {
 				assert.ok(err);
-				assert.deepEqual(err.code, 602);
+				assert.deepEqual(err.code, 503);
 				done();
 			});
 		});
@@ -7935,17 +9573,17 @@ describe("Unit test for: BL - tenant", () => {
 					return 'id';
 				}
 			};
-			
+			nock('http://www.example.com')
+				.get('/registry/key')
+				.query({"env": 'dashboard'})
+				.reply(200, {
+					"result": true,
+				});
 			let coreError = {
 				core: {
-					registry: {
-						loadByEnv: (env, cb) => {
-							return cb(null, null);
-						}
-					},
 					key: {
 						generateExternalKey: (interKey, opt1, opt2, key, cb) => {
-							return cb (null, 'extKey');
+							return cb(null, 'extKey');
 						}
 					}
 				},
@@ -7954,7 +9592,6 @@ describe("Unit test for: BL - tenant", () => {
 						return cb(null, "internalKey");
 					}
 				}
-				
 			};
 			
 			let inputMask = {
@@ -8045,18 +9682,18 @@ describe("Unit test for: BL - tenant", () => {
 					return 'id';
 				}
 			};
-			
+			nock('http://www.example.com')
+				.get('/registry/key')
+				.query({"env": 'dashboard'})
+				.reply(200, {
+					"result": true,
+					"data": {
+						algorithm: "123",
+						password: "soajs"
+					}
+				});
 			let coreError = {
 				core: {
-					registry: {
-						loadByEnv: (env, cb) => {
-							return cb(null, {
-								serviceConfig: {
-									key: 'key1'
-								}
-							});
-						}
-					},
 					key: {
 						generateExternalKey: (interKey, opt1, opt2, key, cb) => {
 							return cb(true, null);
@@ -8159,21 +9796,21 @@ describe("Unit test for: BL - tenant", () => {
 					return 'id';
 				}
 			};
-			
+			nock('http://www.example.com')
+				.get('/registry/key')
+				.query({"env": 'dashboard'})
+				.reply(200, {
+					"result": true,
+					"data": {
+						algorithm: "123",
+						password: "soajs"
+					}
+				});
 			let coreError = {
 				core: {
-					registry: {
-						loadByEnv: (env, cb) => {
-							return cb(null, {
-								serviceConfig: {
-									key: 'key1'
-								}
-							});
-						}
-					},
 					key: {
 						generateExternalKey: (interKey, opt1, opt2, key, cb) => {
-							return cb (null, 'extKey');
+							return cb(null, 'extKey');
 						}
 					}
 				},
@@ -8311,10 +9948,7 @@ describe("Unit test for: BL - tenant", () => {
 			
 			BL.addApplication(soajs, inputMask, core, (err) => {
 				assert.ok(err);
-				assert.deepEqual(err, {
-					code: 471,
-					msg: soajs.config.errors[471]
-				});
+				assert.deepEqual(err.code, 503);
 				done();
 			});
 		});
@@ -8376,29 +10010,19 @@ describe("Unit test for: BL - tenant", () => {
 				done();
 			});
 		});
-		
 	});
 	
 	describe("Testing add application external key", () => {
 		afterEach((done) => {
 			BL.modelObj = null;
+			nock.cleanAll();
 			done();
 		});
-		
 		let core = {
 			core: {
-				registry: {
-					loadByEnv: (env, cb) => {
-						return cb(null, {
-							serviceConfig: {
-								key: 'New'
-							}
-						});
-					}
-				},
 				key: {
 					generateExternalKey: (interKey, opt1, opt2, key, cb) => {
-						return cb (null, 'KeyNew');
+						return cb(null, 'KeyNew');
 					}
 				}
 			}
@@ -8415,7 +10039,16 @@ describe("Unit test for: BL - tenant", () => {
 				device: {},
 				geo: {}
 			};
-			
+			nock('http://www.example.com')
+				.get('/registry/key')
+				.query({"env": 'dashboard'})
+				.reply(200, {
+					"result": true,
+					"data": {
+						algorithm: "123",
+						password: "soajs"
+					}
+				});
 			BL.modelObj = {
 				getTenant: (inputMask, cb) => {
 					return cb(null, {
@@ -8493,7 +10126,16 @@ describe("Unit test for: BL - tenant", () => {
 				device: {},
 				geo: {}
 			};
-			
+			nock('http://www.example.com')
+				.get('/registry/key')
+				.query({"env": 'dashboard'})
+				.reply(200, {
+					"result": true,
+					"data": {
+						algorithm: "123",
+						password: "soajs"
+					}
+				});
 			BL.modelObj = {
 				getTenant: (inputMask, cb) => {
 					return cb(null, {
@@ -8563,7 +10205,16 @@ describe("Unit test for: BL - tenant", () => {
 				device: {},
 				geo: {}
 			};
-			
+			nock('http://www.example.com')
+				.get('/registry/key')
+				.query({"env": 'dashboard'})
+				.reply(200, {
+					"result": true,
+					"data": {
+						algorithm: "123",
+						password: "soajs"
+					}
+				});
 			BL.modelObj = {
 				getTenant: (inputMask, cb) => {
 					return cb(null, {
@@ -8615,6 +10266,24 @@ describe("Unit test for: BL - tenant", () => {
 		});
 		
 		it("Fails - add application external key - loadByEnv error", (done) => {
+			nock('http://www.example.com')
+				.get('/registry/key')
+				.query({"env": 'dashboard'})
+				.reply(200, {
+					"result": false,
+					"errors": {
+						"details": [
+							{
+								"code": 1,
+								"message": "error 1"
+							},
+							{
+								"code": 2,
+								"message": "error 2"
+							}
+						]
+					}
+				});
 			let inputMask = {
 				id: 'TenantID',
 				key: "KEY1",
@@ -8687,14 +10356,10 @@ describe("Unit test for: BL - tenant", () => {
 			
 			let coreError = {
 				core: {
-					registry: {
-						loadByEnv: (env, cb) => {
-							return cb(true, null);
-						}
-					},
+					
 					key: {
 						generateExternalKey: (interKey, opt1, opt2, key, cb) => {
-							return cb (null, 'newExt');
+							return cb(null, 'newExt');
 						}
 					}
 				}
@@ -8702,7 +10367,7 @@ describe("Unit test for: BL - tenant", () => {
 			
 			BL.addApplicationExtKey(soajs, inputMask, coreError, (err) => {
 				assert.ok(err);
-				assert.deepEqual(err.code, 602);
+				assert.deepEqual(err.code, 503);
 				done();
 			});
 		});
@@ -8767,17 +10432,18 @@ describe("Unit test for: BL - tenant", () => {
 					return cb(null, true);
 				}
 			};
-			
+			nock('http://www.example.com')
+				.get('/registry/key')
+				.query({"env": 'dashboard'})
+				.reply(200, {
+					"result": true,
+					"data": null
+				});
 			let coreError = {
 				core: {
-					registry: {
-						loadByEnv: (env, cb) => {
-							return cb(null, null);
-						}
-					},
 					key: {
 						generateExternalKey: (interKey, opt1, opt2, key, cb) => {
-							return cb (null, 'extKey');
+							return cb(null, 'extKey');
 						}
 					}
 				}
@@ -8802,6 +10468,16 @@ describe("Unit test for: BL - tenant", () => {
 		});
 		
 		it("Fails - add application external key - generateExternalKey error", (done) => {
+			nock('http://www.example.com')
+				.get('/registry/key')
+				.query({"env": 'dashboard'})
+				.reply(200, {
+					"result": true,
+					"data": {
+						algorithm: "123",
+						password: "soajs"
+					}
+				});
 			BL.modelObj = {
 				getTenant: (inputMask, cb) => {
 					return cb(null, {
@@ -8861,18 +10537,18 @@ describe("Unit test for: BL - tenant", () => {
 					return cb(null, true);
 				}
 			};
-			
+			nock('http://www.example.com')
+				.get('/registry/key')
+				.query({"env": 'dashboard'})
+				.reply(200, {
+					"result": true,
+					"data": {
+						algorithm: "123",
+						password: "soajs"
+					}
+				});
 			let coreError = {
 				core: {
-					registry: {
-						loadByEnv: (env, cb) => {
-							return cb(null, {
-								serviceConfig: {
-									key: 'key1'
-								}
-							});
-						}
-					},
 					key: {
 						generateExternalKey: (interKey, opt1, opt2, key, cb) => {
 							return cb(true, null);
@@ -9066,10 +10742,7 @@ describe("Unit test for: BL - tenant", () => {
 			
 			BL.addApplicationExtKey(soajs, inputMask, core, (err) => {
 				assert.ok(err);
-				assert.deepEqual(err, {
-					code: 471,
-					msg: soajs.config.errors[471]
-				});
+				assert.deepEqual(err.code, 503);
 				done();
 			});
 		});

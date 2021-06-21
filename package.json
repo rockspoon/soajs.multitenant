@@ -1,7 +1,7 @@
 {
   "name": "soajs.multitenant",
   "description": "soajs multitenant service",
-  "version": "1.1.11",
+  "version": "2.0.36",
   "author": "soajs team <team@soajs.org>",
   "repository": {
     "type": "git",
@@ -29,12 +29,13 @@
     "grunt-jsdoc": "2.4.0",
     "grunt-mocha-test": "0.13.3",
     "mocha": "6.2.2",
-    "request": "2.88.0",
-    "soajs.controller": "3.*"
+    "nock": "13.0.3",
+    "request": "2.88.2",
+    "soajs.controller": "4.0.39"
   },
   "dependencies": {
     "async": "3.2.0",
-    "soajs": "2.6.10",
+    "soajs": "4.0.26",
     "soajs.core.libs": "1.2.0"
   }
 }

@@ -10,7 +10,7 @@
 "use strict";
 
 let aclSchema = require('../../../../schemas/acl');
-aclSchema.required = true;
+//aclSchema.required = true;
 
 let getPackagesSchema = {
     "type": "object",
@@ -33,7 +33,11 @@ let getPackagesSchema = {
                     "name": {"type": "string", "required": true},
                     "description": {"type": "string", "required": false},
                     "_TTL": {"type": "number", "min": 1, "required": true},
-                    "acl": aclSchema
+                    "acl": aclSchema,
+	                "aclTypeByEnv": {
+		                "type": "object",
+		                "required": false
+	                }
                 }
             }
         },

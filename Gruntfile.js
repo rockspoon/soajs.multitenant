@@ -95,7 +95,7 @@ module.exports = function (grunt) {
 				}
 			},
 			files: {
-				src: ['index.js', 'config.js', 'Gruntfile.js', 'bl/*.js', 'model/mongo/*.js', 'lib/*.js', 'test/helper.js', 'test/unit/**/*.js', 'test/integration/**/*.js']
+				src: ['index.js', '_index.js', 'config.js', 'Gruntfile.js', 'bl/*.js', 'schemas/*.js', 'model/mongo/*.js', 'lib/*.js', 'test/helper.js', 'test/unit/**/*.js', 'test/integration/**/*.js']
 			},
 			gruntfile: {
 				src: 'Gruntfile.js'
@@ -104,17 +104,23 @@ module.exports = function (grunt) {
 		
 		env: {
 			mochaTest: {
+				SOAJS_IMPORTER_DROPDB: true,
 				SOAJS_ENV: "dashboard",
 				SOAJS_SRVIP: "127.0.0.1",
 				SOAJS_TEST: true,
-				SOAJS_SRVPORT: 4004,
+				//SOAJS_SRVPORT: 4004,
+				SOAJS_DEPLOY_MANUAL: true,
+				SOAJS_REGISTRY_API: '127.0.0.1:5000',
 				APP_DIR_FOR_CODE_COVERAGE: '../'
 			},
 			coverage: {
+				SOAJS_IMPORTER_DROPDB: true,
 				SOAJS_ENV: "dashboard",
 				SOAJS_SRVIP: "127.0.0.1",
 				SOAJS_TEST: true,
-				SOAJS_SRVPORT: 4004,
+				//SOAJS_SRVPORT: 4004,
+				SOAJS_DEPLOY_MANUAL: true,
+				SOAJS_REGISTRY_API: '127.0.0.1:5000',
 				APP_DIR_FOR_CODE_COVERAGE: '../test/coverage/instrument/'
 			}
 		},
@@ -144,7 +150,7 @@ module.exports = function (grunt) {
 		
 		
 		instrument: {
-			src: ['index.js', 'config.js', 'bl/*.js', 'model/mongo/*.js', 'lib/*.js'],
+			src: ['index.js', '_index.js', 'config.js', 'bl/*.js', 'model/mongo/*.js', 'lib/*.js', 'schemas/*.js'],
 			options: {
 				lazy: false,
 				basePath: 'test/coverage/instrument/'

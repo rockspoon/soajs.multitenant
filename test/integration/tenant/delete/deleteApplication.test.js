@@ -33,18 +33,21 @@ describe("Testing delete application API", () => {
     it("Success - will return all tenant records - no input", (done) => {
         let params = {};
         requester('/tenants', 'get', params, (error, body) => {
-            assert.ifError(error);
-            assert.ok(body);
-            assert.ok(body.data);
-            body.data.forEach(tenant => {
-                if (tenant.code === 'test2') {
-                    selectedTenant = tenant;
-                }
-            });
-            let check = validator.validate(body, listTenantsSchema);
-            assert.deepEqual(check.valid, true);
-            assert.deepEqual(check.errors, []);
-            done();
+	        assert.ifError(error);
+	        assert.ok(body);
+	        assert.ok(body.data);
+	        assert.ok(body.data.items);
+	        assert.ok(body.data.items.length > 0);
+	        let check = validator.validate(body, listTenantsSchema);
+	        assert.deepEqual(check.valid, true);
+	        assert.deepEqual(check.errors, []);
+	        let tenants = body.data.items;
+	        tenants.forEach(tenant => {
+		        if (tenant.code === 'test2') {
+			        selectedTenant = tenant;
+		        }
+	        });
+	        done();
         });
     });
 
@@ -66,7 +69,21 @@ describe("Testing delete application API", () => {
             done();
         });
     });
-
+	
+	it("Success - will delete console application record - input", (done) => {
+		let params = {
+			qs: {
+				id: "5c0e74ba9acc3c5a84a51259",
+				appId: '30d2cb5fc04ce51e06000003'
+			}
+		};
+		requester('/tenant/console/application', 'delete', params, (error, body) => {
+			assert.ifError(error);
+			assert.ok(body);
+			done();
+		});
+	});
+	
     it("Success - will delete application record - input", (done) => {
         let params = {
             qs: {

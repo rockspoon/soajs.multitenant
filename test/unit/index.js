@@ -14,7 +14,7 @@ describe("Starting Unit test", () => {
 
     before((done) => {
         let rootPath = process.cwd();
-        imported(rootPath + "/test/data/soajs_profile.js", rootPath + "/test/data/provision_unit/", (err, msg) => {
+	    imported.runPath(rootPath + "/test/data/soajs_profile.js", rootPath + "/test/data/provision_unit/", true, null, (err, msg) => {
             if (err) {
 	            console.log(err);
             }
@@ -27,8 +27,8 @@ describe("Starting Unit test", () => {
 
     it("Unit test for BL", (done) => {
         require("./bl/index.test.js");
+	    require("./bl/product.test.js");
         require("./bl/tenant.test.js");
-        require("./bl/product.test.js");
         done();
     });
 
@@ -44,6 +44,7 @@ describe("Starting Unit test", () => {
 
     it("Unit test for lib", (done) => {
         require("./lib/sanitize.test.js");
+        require("./lib/sdk.test.js");
         done();
     });
 
